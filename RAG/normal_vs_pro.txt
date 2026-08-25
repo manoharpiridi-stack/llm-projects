@@ -1,0 +1,136 @@
+Insurellm RAG — Normal vs Pro (showcase notes)
+================================================
+
+Switch the pipeline in Project_5/app.py by changing one import:
+
+  from Implementation.answer import ...        -> normal
+  from Pro_Implementation.answer import ...    -> pro
+
+Restart app.py after switching. The banner at the top of the UI follows that import.
+
+
+WHAT THEY SHARE
+---------------
+- Same knowledge base (products, employees, contracts markdown)
+- Same chat models (Groq / OpenRouter dropdown)
+- Same embedding model (MiniLM on CPU)
+- Same Gradio layout (chat + retrieved context panel)
+- Chunk size 500 characters with 200 character overlap
+
+
+NORMAL  (Implementation/)
+-------------------------
+Index:  vector_db
+Ingest: uv run python Project_5/Implementation/ingest.py
+        Local character split only. Raw chunk text. Fast.
+
+Query path for EVERY message:
+  1. Glue earlier user messages onto the new question
+  2. Embed that string
+  3. Take the top 8 similar chunks
+  4. Send those chunks + the chat to the model
+
+No small-talk skip, no query rewrite, no rerank.
+
+
+PRO  (Pro_Implementation/)
+--------------------------
+Index:  preprocessed_db
+Ingest: uv run python Project_5/Pro_Implementation/ingest.py
+        Local split, then each chunk is stored as:
+          headline (file type + heading/name)
+          + short summary
+          + original text
+        Default ingest does NOT call Groq (that was too slow on 76 files).
+        Optional old style: set RAG_LLM_CHUNK=1 (one Groq call per file).
+
+Query path:
+  - "hi" / "thanks" / similar  -> chat only, no retrieval
+  - Real questions:
+      1. Rewrite the question using chat history
+      2. Search with the original AND the rewritten query (up to 20 hits each)
+      3. Merge, rerank with Groq, keep about 8
+      4. Answer from those passages
+
+Slower per question (extra Groq calls). Better on follow-ups and messy wording.
+
+
+DEMO SCRIPT (run the same questions on both)
+--------------------------------------------
+Start a NEW chat for each numbered item so history does not leak.
+
+1) Chat vs always-search
+   Type:  hi
+   Normal: context panel fills with random KB chunks
+   Pro:    no knowledge-base lookup; short greeting
+
+2) Distinctive name vs short last name
+   Type:  who is lancaster
+   Both:  often find Avery Lancaster (CEO)
+
+   Type:  who is kim
+   Normal: often misses David Kim (short/common name, embeddings only)
+   Pro:    more likely to find David Kim (rewrite + name in headline)
+
+   Control:  who is David Kim
+   Both: should work more easily
+
+3) Follow-up (keep the SAME chat)
+   Type:  What is Carllm?
+   Then:  What does the professional tier cost?
+   Normal: search mixes "Carllm" + "professional tier" and may pull other products
+   Pro:    rewrite aims at "Carllm Professional Tier"; about $2,500/month
+
+   Another pair:
+   Type:  Who is Avery Lancaster?
+   Then:  What is her salary?
+   Pro should stay on Avery ($225,000). Normal may drift.
+
+4) Vague wording
+   Type:  tell me about the auto one
+   Pro rewrite should point at Carllm. Normal may mix products.
+
+   Type:  devops guy in new york
+   Target: David Kim. Harder for normal embeddings.
+
+5) Product sheet vs contract (wrong number is a good fail)
+   Type:  What is Carllm Basic Tier?
+   Product sheet: $1,000/month
+
+   Type:  Which tier did Roadway Insurance subscribe to?
+   Contract: Professional, $2,500/month
+   Normal chunks can mix product prices with a customer's contract.
+
+6) Speed (same question, e.g. What is Carllm?)
+   Normal: one search + one model call
+   Pro:    rewrite + two searches + rerank + answer (slower)
+
+
+WHAT TO WATCH
+-------------
+- Right-hand "Retrieved context" panel, not only the chat reply
+- Whether "hi" retrieves anything
+- Whether follow-up #2 still talks about the same product/person
+- Whether Carllm Basic ($1,000) gets confused with Roadway's Professional ($2,500)
+
+
+QUICK COMPARISON
+----------------
+                        Normal              Pro
+Always retrieve         yes                 no (skip greetings)
+Query rewrite           no                  yes
+Dual search             no                  original + rewritten
+Rerank                  no                  yes (Groq)
+Chunk payload           raw text            headline + summary + original
+Index folder            vector_db           preprocessed_db
+Ingest                  fast, local         fast local (default); optional Groq
+Typical latency         lower               higher
+
+
+EXPECTED STORY FOR A DEMO
+-------------------------
+Normal is a straight vector RAG: simple and cheap, but "hi" still searches,
+and "who is kim" can fail while "who is lancaster" works.
+
+Pro spends extra model calls at question time so follow-ups and weak
+wording retrieve the right passage, and greetings stay as chat.
