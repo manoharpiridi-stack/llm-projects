@@ -1,0 +1,13 @@
+.env
+.gradio/
+data/*.parquet
+data/*.joblib
+data/*_sft.jsonl
+data/alerts.jsonl
+data/chroma/
+data/qlora_adapter/
+data/hf_cache/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
