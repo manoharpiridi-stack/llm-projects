@@ -34,11 +34,11 @@ Gradio chatbot over the Insurellm knowledge base. Greetings stay as chat. Real q
 
 ## Setup
 
-From `LLM Projects`:
+From the repository root:
 
 ```powershell
 uv sync
-uv run python Project_5/Pro_Implementation/ingest.py
+uv run python RAG/Pro_Implementation/ingest.py
 ```
 
 Ingest calls Groq once per markdown file and can take a while. Embeddings are local MiniLM (no OpenAI key). Chat, chunking, rewrite, and rerank use Groq.
@@ -51,6 +51,6 @@ OPENROUTER_API_KEY=your_openrouter_key
 ## Run locally
 
 ```powershell
-uv run python Project_5/app.py
-uv run python Project_5/evaluator.py
+uv run python RAG/app.py
+uv run python RAG/evaluator.py
 ```

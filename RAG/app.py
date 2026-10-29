@@ -22,7 +22,7 @@ if USING_PRO:
     PAGE_INTRO = (
         "# Insurellm Expert Assistant (pro)\n"
         "Greetings stay as chat. Real questions use query rewrite, dual retrieve, and rerank. "
-        "Build the index with `uv run python Project_5/Pro_Implementation/ingest.py`."
+        "Build the index with `uv run python RAG/Pro_Implementation/ingest.py`."
     )
     EMPTY_CONTEXT = (
         "No knowledge-base lookup for this message. "
@@ -33,7 +33,7 @@ else:
         "# Insurellm Expert Assistant (normal)\n"
         "Every message is embedded and the closest chunks are retrieved, then the model answers. "
         "No query rewrite or rerank. Optional: "
-        "`uv run python Project_5/Implementation/ingest.py` to rebuild `vector_db`."
+        "`uv run python RAG/Implementation/ingest.py` to rebuild `vector_db`."
     )
     EMPTY_CONTEXT = "No retrieved passages."
 

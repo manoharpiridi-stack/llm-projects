@@ -237,7 +237,7 @@ def fetch_context_unranked(question):
     if not collection_ready():
         raise RuntimeError(
             "The pro vector index is empty. Run: "
-            "uv run python Project_5/Pro_Implementation/ingest.py"
+            "uv run python RAG/Pro_Implementation/ingest.py"
         )
     query = embed_query(question)
     results = get_collection().query(query_embeddings=[query], n_results=RETRIEVAL_K)
